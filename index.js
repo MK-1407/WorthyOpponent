@@ -4,11 +4,36 @@ const fs = require('fs');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 
+// === Dummy Express Server for Render ===
+const express = require('express');
+const https = require('https');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.send('Worthy Opponent Bot is running!');
+});
+
+app.listen(PORT, () => {
+    console.log(`[SERVER] Listening on port ${PORT}`);
+});
+
+// === Ping Google every 3 minutes to stay awake ===
+setInterval(() => {
+    https.get('https://www.google.com', (res) => {
+        console.log(`[PING] Google responded with status code: ${res.statusCode}`);
+    }).on('error', (err) => {
+        console.error('[PING] Error pinging Google:', err.message);
+    });
+}, 180000);
+
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers
     ]
 });
 

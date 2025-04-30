@@ -5,13 +5,13 @@ module.exports = {
         options: [
             {
                 name: 'amount',
-                type: 4,  // 'INTEGER' type for the number of messages
+                type: 4, // INTEGER type
                 description: 'The number of messages to delete',
                 required: true,
             },
             {
                 name: 'type',
-                type: 3,  // 'STRING' type for the message type filter
+                type: 3, // STRING type
                 description: 'The type of messages to delete',
                 required: false,
                 choices: [
@@ -22,86 +22,72 @@ module.exports = {
             },
         ],
     },
+
     async executeInteraction(interaction) {
         const amount = interaction.options.getInteger('amount');
-        const type = interaction.options.getString('type') || 'all'; // Default to 'all'
-
-        // Ensure the amount is between 1 and 100 (Discord limit for bulk delete)
-        if (amount < 1 || amount > 100) {
-            return interaction.reply({
-                content: 'You can only purge between 1 and 100 messages at a time.',
-                ephemeral: true,
-            });
-        }
+        const type = interaction.options.getString('type') || 'all';
 
         try {
-            // Fetch the messages
-            const messages = await interaction.channel.messages.fetch({ limit: amount });
-            
-            // Ensure the number of messages is at least 1
+            // Try fetching more messages to ensure availability
+            const messages = await interaction.channel.messages.fetch({ limit: Math.min(amount + 20, 100) }); // overfetch slightly
             const filteredMessages = messages.filter(msg => {
                 if (type === 'human' && !msg.author.bot) return true;
                 if (type === 'bot' && msg.author.bot) return true;
                 if (type === 'all') return true;
                 return false;
-            });
+            }).first(amount); // Limit to 'amount'
 
-            // If no messages to delete, return a message
-            if (filteredMessages.size === 0) {
-                return interaction.reply({
-                    content: `No ${type} messages found to delete.`,
-                    ephemeral: true,
-                });
+            if (!filteredMessages.length) {
+                return interaction.reply({ content: `No ${type} messages found to delete.`, ephemeral: true });
             }
 
-            // Purge the filtered messages
-            await interaction.channel.bulkDelete(filteredMessages, true);
-            await interaction.reply({
-                content: `Successfully deleted ${filteredMessages.size} ${type} messages.`,
-                ephemeral: true,
-            });
+            await interaction.channel.bulkDelete(filteredMessages, true)
+                .catch(error => {
+                    console.error(error);
+                    throw new Error('Some messages are too old to bulk delete.');
+                });
+
+            await interaction.reply({ content: `Successfully deleted ${filteredMessages.length} ${type} messages.`, ephemeral: true });
+
         } catch (error) {
             console.error(error);
-            await interaction.reply({
-                content: 'There was an error trying to purge messages.',
-                ephemeral: true,
-            });
+            await interaction.reply({ content: error.message || 'There was an error trying to purge messages.', ephemeral: true });
         }
     },
 
     async executeMessage(message) {
-        const args = message.content.split(' ').slice(1); // Get the arguments from the message content
-        const amount = parseInt(args[0]); // First argument is the amount
-        const type = args[1] || 'all'; // Second argument is the type (default to 'all')
+        const args = message.content.trim().split(' ').slice(1);
+        const amount = parseInt(args[0]);
+        const type = args[1] || 'all';
 
-        // Ensure the amount is between 1 and 100 (Discord limit for bulk delete)
-        if (amount < 1 || amount > 100) {
+        if (isNaN(amount) || amount < 1 || amount > 100) {
             return message.reply('You can only purge between 1 and 100 messages at a time.');
         }
 
         try {
-            // Fetch the messages
-            const messages = await message.channel.messages.fetch({ limit: amount });
-            
-            // Ensure the number of messages is at least 1
+            const messages = await message.channel.messages.fetch({ limit: Math.min(amount + 20, 100) });
             const filteredMessages = messages.filter(msg => {
                 if (type === 'human' && !msg.author.bot) return true;
                 if (type === 'bot' && msg.author.bot) return true;
                 if (type === 'all') return true;
                 return false;
-            });
+            }).first(amount); // again limit
 
-            // If no messages to delete, return a message
-            if (filteredMessages.size === 0) {
+            if (!filteredMessages.length) {
                 return message.reply(`No ${type} messages found to delete.`);
             }
 
-            // Purge the filtered messages
-            await message.channel.bulkDelete(filteredMessages, true);
-            await message.reply(`Successfully deleted ${filteredMessages.size} ${type} messages.`);
+            await message.channel.bulkDelete(filteredMessages, true)
+                .catch(error => {
+                    console.error(error);
+                    throw new Error('Some messages are too old to bulk delete.');
+                });
+
+            await message.reply(`Successfully deleted ${filteredMessages.length} ${type} messages.`);
+
         } catch (error) {
             console.error(error);
-            await message.reply('There was an error trying to purge messages.');
+            await message.reply(error.message || 'There was an error trying to purge messages.');
         }
     }
 };
