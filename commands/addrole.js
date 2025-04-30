@@ -23,8 +23,19 @@ module.exports = {
         const role = interaction.options.getRole('role');
 
         try {
-            // Get the member from the user
+            // Check if the interaction is in a guild
+            if (!interaction.guild) {
+                return interaction.reply({ content: 'This command can only be used in a server.', ephemeral: true });
+            }
+
+            // Fetch the member from the user
             const member = await interaction.guild.members.fetch(user.id);
+
+            // Check if the bot has permissions in the guild
+            if (!interaction.guild.me) {
+                console.error('Bot is not in the guild.');
+                return interaction.reply({ content: 'Bot is not in the guild.', ephemeral: true });
+            }
 
             // Check if the bot has permission to manage roles
             if (!interaction.guild.me.permissions.has('MANAGE_ROLES')) {
@@ -32,7 +43,7 @@ module.exports = {
             }
 
             // Check if the user has permission to manage roles
-            if (!interaction.member.permissions.has('MANAGE_ROLES')) {
+            if (!interaction.member || !interaction.member.permissions.has('MANAGE_ROLES')) {
                 return interaction.reply({ content: 'You do not have permission to manage roles.', ephemeral: true });
             }
 
@@ -65,12 +76,12 @@ module.exports = {
             const member = await message.guild.members.fetch(user.id);
 
             // Check if the bot has permission to manage roles
-            if (!message.guild.me.permissions.has('MANAGE_ROLES')) {
+            if (!message.guild.me || !message.guild.me.permissions.has('MANAGE_ROLES')) {
                 return message.reply('I do not have permission to manage roles.');
             }
 
             // Check if the user has permission to manage roles
-            if (!message.member.permissions.has('MANAGE_ROLES')) {
+            if (!message.member || !message.member.permissions.has('MANAGE_ROLES')) {
                 return message.reply('You do not have permission to manage roles.');
             }
 
@@ -90,4 +101,3 @@ module.exports = {
         }
     }
 };
-
