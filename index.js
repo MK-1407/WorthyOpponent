@@ -31,9 +31,10 @@ setInterval(() => {
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildModeration,
+        GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
     ]
 });
 
@@ -53,7 +54,7 @@ const rest = new REST({ version: '9' }).setToken(process.env.token);
         console.log('Started refreshing application (/) commands.');
 
         await rest.put(
-            Routes.applicationGuildCommands(process.env.clientId, process.env.guildId),
+            Routes.applicationCommands(process.env.clientId),
             { body: client.commands.map(command => command.data) },
         );
 

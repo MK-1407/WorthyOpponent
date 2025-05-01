@@ -21,10 +21,13 @@
   "dependencies": {
     "@discordjs/rest": "^2.5.0",
     "canvas": "^3.1.0",
+    "csv-parser": "^3.2.0",
     "discord-api-types": "^0.38.1",
     "discord.js": "^14.19.1",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "nodemon": "^3.1.10"
+    "fs": "^0.0.1-security",
+    "nodemon": "^3.1.10",
+    "path": "^0.12.7"
   }
 }
