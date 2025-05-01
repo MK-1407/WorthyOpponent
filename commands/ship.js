@@ -9,12 +9,18 @@ const CSV_FILE = path.join(__dirname, 'ship_history.csv');
 function loadSavedScores() {
     return new Promise((resolve) => {
         const results = [];
-        if (!fs.existsSync(CSV_FILE)) return resolve([]);
+        if (!fs.existsSync(CSV_FILE)) {
+            console.log('CSV file does not exist, returning empty results.');
+            return resolve([]);
+        }
 
         fs.createReadStream(CSV_FILE)
             .pipe(csv())
             .on('data', (data) => results.push(data))
-            .on('end', () => resolve(results));
+            .on('end', () => {
+                console.log(results);
+                resolve(results);
+            });
     });
 }
 
@@ -22,6 +28,7 @@ function loadSavedScores() {
 function saveScoreToCSV(user1ID, user2ID, score) {
     const line = `${user1ID},${user2ID},${score}\n`;
     const header = 'user1,user2,score\n';
+    console.log(`Saving to CSV: ${line}`);
     if (!fs.existsSync(CSV_FILE)) {
         fs.writeFileSync(CSV_FILE, header + line);
     } else {
@@ -78,13 +85,28 @@ module.exports = {
 
         // If a role contains the "%%=" percentage format, use it as the score
         let score = 0;
-        if (preferredRole && preferredRole.includes('%%=')) {
-            const match = preferredRole.match(/%%=(\d+)%/);
-            if (match) {
-                score = parseInt(match[1]);
-            }
+        const savedScores = loadSavedScores();
+        console.log(`Saved scores: ${JSON.stringify(savedScores)}`);
+        const existingEntry = savedScores.find(entry =>
+            (entry.user1 === user1.id && entry.user2 === user2.id) ||
+            (entry.user1 === user2.id && entry.user2 === user1.id)
+        );
+        console.log(`Existing entry: ${JSON.stringify(existingEntry)}`);
+        
+        if (existingEntry) {
+            score = parseInt(existingEntry.score);
         } else {
-            score = await generateCompatibilityScore(user1, user2, preferredRole); // Ensure compatibility score is awaited
+            if (preferredRole && preferredRole.includes('%%=')) {
+                const match = preferredRole.match(/%%=(\d+)%/);
+                if (match) {
+                    score = parseInt(match[1]);
+                    // Save the score for this pair
+                    console.log(`Saving score for ${user1.tag} and ${user2.tag}: ${score}`);
+                    saveScoreToCSV(user1.id, user2.id, score);
+                }
+            } else {
+                score = await generateCompatibilityScore(user1, user2, preferredRole);
+            }
         }
 
         const hearts = '❤️'.repeat(Math.floor(score / 10)) + '🤍'.repeat(10 - Math.floor(score / 10));
@@ -140,6 +162,7 @@ module.exports = {
                 if (match) {
                     score = parseInt(match[1]);
                     // Save the score for this pair
+                    console.log(`Saving score for ${user1.tag} and ${user2.tag}: ${score}`);
                     saveScoreToCSV(user1.id, user2.id, score);
                 }
             } else {
@@ -175,17 +198,25 @@ async function calculateBaseScore(user1, user2) {
 // Find a user with the specified role
 async function findUserWithRole(guild, preferredRole) {
     const members = await guild.members.fetch(); // Ensure members are fetched before accessing roles
-    let foundUser = null;
+    const usersWithRole = [];
 
-    // Loop through the members and find a user with the given role
+    // Loop through the members and collect those who have the preferred role
     for (let member of members.values()) {
         if (!member.user.bot && member.id !== guild.client.user.id) {
-            if (preferredRole && member.roles.cache.some(role => role.name.toLowerCase() === preferredRole)) {
-                foundUser = member.user;
-                break; // Stop once we find a valid user
+            if (preferredRole && member.roles.cache.some(role => role.name.toLowerCase() === preferredRole.toLowerCase())) {
+                usersWithRole.push(member.user); // Add user to the list if they have the role
             }
         }
     }
 
-    return foundUser;
+    // Ensure there are users with the role
+    if (usersWithRole.length > 0) {
+        // Randomly choose a user from the list
+        let randomIndex = Math.floor(Math.random() * usersWithRole.length);
+        return usersWithRole[randomIndex];
+    }
+
+    return null; // Return null if no user with the preferred role was found
 }
+
+
