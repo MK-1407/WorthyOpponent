@@ -1,3 +1,5 @@
+const { PermissionFlagsBits } = require("discord.js");
+
 module.exports = {
     data: {
         name: 'removerole',
@@ -26,19 +28,9 @@ module.exports = {
             // Get the member from the user
             const member = await interaction.guild.members.fetch(user.id);
 
-            // Check if the bot has permission to manage roles
-            if (!interaction.guild.me.permissions.has('MANAGE_ROLES')) {
-                return interaction.reply({ content: 'I do not have permission to manage roles.', ephemeral: true });
-            }
-
             // Check if the user has permission to manage roles
-            if (!interaction.member.permissions.has('MANAGE_ROLES')) {
+            if (!interaction.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
                 return interaction.reply({ content: 'You do not have permission to manage roles.', ephemeral: true });
-            }
-
-            // Check if the bot can remove the role (the role must not be higher than the bot's highest role)
-            if (role.position >= interaction.guild.me.roles.highest.position) {
-                return interaction.reply({ content: 'I cannot remove that role. It is higher than my highest role.', ephemeral: true });
             }
 
             // Remove the role from the member
@@ -54,7 +46,7 @@ module.exports = {
 
     async executeMessage(message) {
         const args = message.content.trim().split(' ').slice(1);
-        const user = message.mentions.users.first();
+        const user = message.mentions.users.first() || message.guild.members.cache.get(args[0]);
         const role = message.guild.roles.cache.get(args[1].replace('<@&', '').replace('>', ''));
 
         if (!user || !role) {
@@ -64,19 +56,14 @@ module.exports = {
         try {
             const member = await message.guild.members.fetch(user.id);
 
-            // Check if the bot has permission to manage roles
-            if (!message.guild.me.permissions.has('MANAGE_ROLES')) {
-                return message.reply('I do not have permission to manage roles.');
-            }
-
             // Check if the user has permission to manage roles
-            if (!message.member.permissions.has('MANAGE_ROLES')) {
+            if (!message.member.permissions.has(PermissionFlagsBits.ManageRoles)) {
                 return message.reply('You do not have permission to manage roles.');
             }
 
-            // Check if the bot can remove the role
-            if (role.position >= message.guild.me.roles.highest.position) {
-                return message.reply('I cannot remove that role. It is higher than my highest role.');
+            //check if the role is higher than the user's highest role
+            if (role.position >= member.roles.highest.position) {
+                return message.reply('I cannot remove that role. It is higher than the user\'s highest role.');
             }
 
             // Remove the role from the member
