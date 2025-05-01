@@ -85,28 +85,16 @@ module.exports = {
 
         // If a role contains the "%%=" percentage format, use it as the score
         let score = 0;
-        const savedScores = loadSavedScores();
-        console.log(`Saved scores: ${JSON.stringify(savedScores)}`);
-        const existingEntry = savedScores.find(entry =>
-            (entry.user1 === user1.id && entry.user2 === user2.id) ||
-            (entry.user1 === user2.id && entry.user2 === user1.id)
-        );
-        console.log(`Existing entry: ${JSON.stringify(existingEntry)}`);
-        
-        if (existingEntry) {
-            score = parseInt(existingEntry.score);
-        } else {
-            if (preferredRole && preferredRole.includes('%%=')) {
-                const match = preferredRole.match(/%%=(\d+)%/);
-                if (match) {
-                    score = parseInt(match[1]);
-                    // Save the score for this pair
-                    console.log(`Saving score for ${user1.tag} and ${user2.tag}: ${score}`);
-                    saveScoreToCSV(user1.id, user2.id, score);
-                }
-            } else {
-                score = await generateCompatibilityScore(user1, user2, preferredRole);
+        if (preferredRole && preferredRole.includes('%%=')) {
+            const match = preferredRole.match(/%%=(\d+)%/);
+            if (match) {
+                score = parseInt(match[1]);
+                // Save the score for this pair
+                console.log(`Saving score for ${user1.tag} and ${user2.tag}: ${score}`);
+                saveScoreToCSV(user1.id, user2.id, score);
             }
+        } else {
+            score = await generateCompatibilityScore(user1, user2, preferredRole);
         }
 
         const hearts = '❤️'.repeat(Math.floor(score / 10)) + '🤍'.repeat(10 - Math.floor(score / 10));
@@ -153,7 +141,7 @@ module.exports = {
             (entry.user1 === user1.id && entry.user2 === user2.id) ||
             (entry.user1 === user2.id && entry.user2 === user1.id)
         );
-        
+
         if (existingEntry) {
             score = parseInt(existingEntry.score);
         } else {
@@ -169,7 +157,7 @@ module.exports = {
                 score = await generateCompatibilityScore(user1, user2, preferredRole);
             }
         }
-        
+
 
         const hearts = '❤️'.repeat(Math.floor(score / 10)) + '🤍'.repeat(10 - Math.floor(score / 10));
 
