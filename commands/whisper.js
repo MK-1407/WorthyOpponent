@@ -41,9 +41,9 @@ module.exports = {
             .setStyle(ButtonStyle.Secondary);
         const row = new ActionRowBuilder().addComponents(button);
 
-        // Send to channel
+        // Send to channel 
         const msg = await interaction.channel.send({
-            content: `📨 <@${targetUser.id}>, someone has sent you a secret message!`,
+            content: `📨 <@${targetUser.id}>, ${interaction.user} has sent you a secret message!`,
             components: [row]
         });
 
