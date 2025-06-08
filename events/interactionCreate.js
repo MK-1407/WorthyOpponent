@@ -19,5 +19,4 @@ module.exports = {
         }
     },
     once: false, // This event is not a one-time event
-
 }
