@@ -5,7 +5,7 @@ const { AttachmentBuilder } = require('discord.js');
 module.exports = {
     name: Events.GuildMemberAdd,
     async execute(member) {
-        const welcomeChannelId = '1366267532029198396'; // Replace with your welcome channel ID
+        const welcomeChannelId = '1383477669466869931'; // Replace with your welcome channel ID
 
         const channel = member.guild.channels.cache.get(welcomeChannelId);
         if (!channel) return console.error('Welcome channel not found.');
