@@ -11,7 +11,7 @@ module.exports = {
             },
         ],
     },
-    async execute(interaction) {
+    async executeInteraction(interaction) {
         const channel = interaction.options.getChannel('channel');
 
         if (!channel || channel.type !== 0) { // 0 is for text channels
