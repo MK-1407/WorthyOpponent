@@ -1,14 +1,16 @@
 module.exports = {
-    name: 'setwelcome',
-    description: 'Set the welcome channel for the server.',
-    options: [
-        {
-            name: 'channel',
-            type: 7, // Channel type
-            description: 'The channel to set as the welcome channel.',
-            required: true,
-        },
-    ],
+    data: {
+        name: 'setwelcome',
+        description: 'Set the welcome channel for the server.',
+        options: [
+            {
+                name: 'channel',
+                type: 7, // Channel type
+                description: 'The channel to set as the welcome channel.',
+                required: true,
+            },
+        ],
+    },
     async execute(interaction) {
         const channel = interaction.options.getChannel('channel');
 
