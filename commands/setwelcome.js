@@ -32,7 +32,7 @@ module.exports = {
         const args = message.content.split(' ').slice(1);
         const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[0]);
 
-        if (!channel || channel.type !== 'GUILD_TEXT') {
+        if (!channel || channel.type !== 0) {
             return message.reply('Please provide a valid text channel.');
         }
 
