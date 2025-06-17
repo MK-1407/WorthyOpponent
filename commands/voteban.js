@@ -3,17 +3,17 @@ const { executeMessage } = require("./setwelcome");
 
 module.exports = {
     data: {
-    name: 'voteban',
-    description: 'Vote to ban a user from the server, does not requires admin permissions. atleast 5 votes are required to ban a user.',
-    Options: [
-        {
-            name: 'user',
-            description: 'The user to ban',
-            type: 6, // USER type
-            required: true
-        }
-    ]
-},
+        name: 'voteban',
+        description: 'Vote to ban a user from the server, does not requires admin permissions.',
+        options: [
+            {
+                name: 'user',
+                description: 'The user to ban',
+                type: 6, // USER type
+                required: true
+            }
+        ]
+    },
     async executeInteraction(interaction) {
         const targetUser = interaction.options.getUser('user');
         if (!targetUser) {
@@ -25,7 +25,7 @@ module.exports = {
             title: 'Vote to Ban',
             description: `Do you want to ban ${targetUser.username}? React with 👍 to vote for ban or 👎 to vote against.`,
             footer: {
-                text: 'At least 5 votes are required to ban the user.'
+                text: 'At least 6 votes are required to ban the user.'
             }
         };
         // check till embed gets 5 votes
@@ -85,7 +85,7 @@ module.exports = {
             title: 'Vote to Ban',
             description: `Do you want to ban ${targetUser.username}? React with 👍 to vote for ban or 👎 to vote against.`,
             footer: {
-                text: 'At least 5 votes are required to ban the user.'
+                text: 'At least 6 votes are required to ban the user.'
             }
         };
         // check till embed gets 5 votes
@@ -114,23 +114,29 @@ module.exports = {
                 collector.stop();
             }
         });
-        collector.on('end', collected => {
-            if (votesForBan < 5 && votesAgainstBan < 5) {
-                message.channel.send(`The vote to ban ${targetUser.username} has ended without enough votes.`);
-            } else if (votesForBan >= 5) {
-                // Logic to ban the user can be added here
-                message.guild.members.ban(targetUser.id)
-                    .then(() => {
-                        message.channel.send(`${targetUser.username} has been banned from the server.`);
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        message.channel.send(`Failed to ban ${targetUser.username}.`);
-                    });
-            } else {
+        collector.on('end', async () => {
+            const messageReactions = message.reactions.cache;
+            const upvotes = messageReactions.get('👍')?.count || 0;
+            const downvotes = messageReactions.get('👎')?.count || 0;
+
+            const netUpvotes = upvotes - 1; // -1 because the bot reacts too
+            const netDownvotes = downvotes - 1;
+
+            if (netUpvotes >= 5) {
+                try {
+                    await interaction.guild.members.ban(targetUser.id);
+                    message.channel.send(`${targetUser.username} has been banned from the server.`);
+                } catch (err) {
+                    console.error(err);
+                    message.channel.send(`Failed to ban ${targetUser.username}.`);
+                }
+            } else if (netDownvotes >= 5) {
                 message.channel.send(`The vote to ban ${targetUser.username} has failed.`);
+            } else {
+                message.channel.send(`The vote to ban ${targetUser.username} has ended without enough votes.`);
             }
         });
+
         message.channel.send(`Vote to ban ${targetUser.username} has been initiated.`);
     }
 }
