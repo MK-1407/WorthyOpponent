@@ -15,149 +15,122 @@ module.exports = {
     ]
 },
     async executeInteraction(interaction) {
-        const user = interaction.options.getUser('user');
-        if (!user) {
-            return interaction.reply({ content: 'Please provide a valid user to ban.', ephemeral: true });
+        const targetUser = interaction.options.getUser('user');
+        if (!targetUser) {
+            return interaction.reply({ content: 'Please specify a valid user to ban.', ephemeral: true });
         }
-
-        // Check if the user is already banned
-        const bannedUsers = await interaction.guild.bans.fetch();
-        if (bannedUsers.has(user.id)) {
-            return interaction.reply({ content: `${user.tag} is already banned.`, ephemeral: true });
-        }
-
-        // Create a vote channel
-        const voteChannel = await interaction.guild.channels.create(`vote-ban-${user.username}`, {
-            type: 'GUILD_TEXT',
-            permissionOverwrites: [
-                {
-                    id: interaction.guild.id,
-                    deny: ['VIEW_CHANNEL'],
-                },
-                {
-                    id: user.id,
-                    allow: ['VIEW_CHANNEL'],
-                }
-            ]
-        });
-
-        // Send the voting message
-        const voteMessage = await voteChannel.send({
-            content: `Vote to ban ${user.tag}. React with 👍 to ban or 👎 to cancel.`,
-            components: []
-        });
-
-        // Add reactions for voting
-        await voteMessage.react('👍');
-        await voteMessage.react('👎');
-
-        // Create a filter for reactions
-        const filter = (reaction, voter) => {
-            return ['👍', '👎'].includes(reaction.emoji.name) && !voter.bot;
+        // send embed message to the chennel
+        const embed = {
+            color: 0xFF0000,
+            title: 'Vote to Ban',
+            description: `Do you want to ban ${targetUser.username}? React with 👍 to vote for ban or 👎 to vote against.`,
+            footer: {
+                text: 'At least 5 votes are required to ban the user.'
+            }
         };
+        // check till embed gets 5 votes
+        const message = await interaction.channel.send({ embeds: [embed], fetchReply: true });
+        await message.react('👍')
+        await message.react('👎');
 
-        // Collect reactions
-        const collector = voteMessage.createReactionCollector({ filter, time: 60000 });
-
+        const filter = (reaction, user) => {
+            return ['👍', '👎'].includes(reaction.emoji.name) && !user.bot;
+        };
+        const collector = message.createReactionCollector({ filter, time: 60000 }); // 1 minute to collect votes
         let votesForBan = 0;
         let votesAgainstBan = 0;
-
-        collector.on('collect', (reaction, voter) => {
+        collector.on('collect', (reaction, user) => {
             if (reaction.emoji.name === '👍') {
                 votesForBan++;
             } else if (reaction.emoji.name === '👎') {
                 votesAgainstBan++;
             }
-        });
-
-        collector.on('end', async () => {
+            // Check if we have enough votes
             if (votesForBan >= 5) {
-                try {
-                    await interaction.guild.members.ban(user);
-                    await voteChannel.send(`${user.tag} has been banned from the server.`);
-                } catch (error) {
-                    console.error(error);
-                    await voteChannel.send(`Failed to ban ${user.tag}.`);
-                }
-            } else {
-                await voteChannel.send(`Vote ended. Not enough votes to ban ${user.tag}.`);
+                message.channel.send(`The user ${targetUser.username} has been banned by vote.`);
+                // Here you would add the logic to actually ban the user
+                collector.stop();
+            } else if (votesAgainstBan >= 5) {
+                message.channel.send(`The vote to ban ${targetUser.username} has failed.`);
+                collector.stop();
             }
-            await voteChannel.delete();
         });
-
-        return interaction.reply({ content: `Voting started in ${voteChannel}.`, ephemeral: true });
+        collector.on('end', collected => {
+            if (votesForBan < 5 && votesAgainstBan < 5) {
+                message.channel.send(`The vote to ban ${targetUser.username} has ended without enough votes.`);
+            } else if (votesForBan >= 5) {
+                // Logic to ban the user can be added here
+                interaction.guild.members.ban(targetUser.id)
+                    .then(() => {
+                        message.channel.send(`${targetUser.username} has been banned from the server.`);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        message.channel.send(`Failed to ban ${targetUser.username}.`);
+                    });
+            } else {
+                message.channel.send(`The vote to ban ${targetUser.username} has failed.`);
+            }
+        });
+        interaction.reply({ content: `Vote to ban ${targetUser.username} has been initiated.`, ephemeral: true });
     },
-    async executeMessage(message, args) {
-        const user = message.mentions.users.first() || message.guild.members.cache.get(args[0]);
-        if (!user) {
-            return message.reply('Please provide a valid user to ban.');
+    async executeMessage(message) {
+        const targetUser = message.mentions.users.first();
+        if (!targetUser) {
+            return message.channel.send('Please mention a valid user to ban.');
         }
-
-        // Check if the user is already banned
-        const bannedUsers = await message.guild.bans.fetch();
-        if (bannedUsers.has(user.id)) {
-            return message.reply(`${user.tag} is already banned.`);
-        }
-
-        // Create a vote channel
-        const voteChannel = await message.guild.channels.create(`vote-ban-${user.username}`, {
-            type: 'GUILD_TEXT',
-            permissionOverwrites: [
-                {
-                    id: message.guild.id,
-                    deny: ['VIEW_CHANNEL'],
-                },
-                {
-                    id: user.id,
-                    allow: ['VIEW_CHANNEL'],
-                }
-            ]
-        });
-
-        // Send the voting message
-        const voteMessage = await voteChannel.send({
-            content: `Vote to ban ${user.tag}. React with 👍 to ban or 👎 to cancel.`,
-            components: []
-        });
-
-        // Add reactions for voting
-        await voteMessage.react('👍');
-        await voteMessage.react('👎');
-
-        // Create a filter for reactions
-        const filter = (reaction, voter) => {
-            return ['👍', '👎'].includes(reaction.emoji.name) && !voter.bot;
+        // send embed message to the channel
+        const embed = {
+            color: 0xFF0000,
+            title: 'Vote to Ban',
+            description: `Do you want to ban ${targetUser.username}? React with 👍 to vote for ban or 👎 to vote against.`,
+            footer: {
+                text: 'At least 5 votes are required to ban the user.'
+            }
         };
-
-        // Collect reactions
-        const collector = voteMessage.createReactionCollector({ filter, time: 60000 });
-
+        // check till embed gets 5 votes
+        const msg = await message.channel.send({ embeds: [embed], fetchReply: true });
+        await msg.react('👍');
+        await msg.react('👎');
+        const filter = (reaction, user) => {
+            return ['👍', '👎'].includes(reaction.emoji.name) && !user.bot;
+        };
+        const collector = msg.createReactionCollector({ filter, time: 60000 }); // 1 minute to collect votes
         let votesForBan = 0;
         let votesAgainstBan = 0;
-
-        collector.on('collect', (reaction, voter) => {
+        collector.on('collect', (reaction, user) => {
             if (reaction.emoji.name === '👍') {
                 votesForBan++;
             } else if (reaction.emoji.name === '👎') {
                 votesAgainstBan++;
             }
-        });
-
-        collector.on('end', async () => {
+            // Check if we have enough votes
             if (votesForBan >= 5) {
-                try {
-                    await message.guild.members.ban(user);
-                    await voteChannel.send(`${user.tag} has been banned from the server.`);
-                } catch (error) {
-                    console.error(error);
-                    await voteChannel.send(`Failed to ban ${user.tag}.`);
-                }
-            } else {
-                await voteChannel.send(`Vote ended. Not enough votes to ban ${user.tag}.`);
+                message.channel.send(`The user ${targetUser.username} has been banned by vote.`);
+                // Here you would add the logic to actually ban the user
+                collector.stop();
+            } else if (votesAgainstBan >= 5) {
+                message.channel.send(`The vote to ban ${targetUser.username} has failed.`);
+                collector.stop();
             }
-            await voteChannel.delete();
         });
-
-        return message.reply(`Voting started in ${voteChannel}.`);
+        collector.on('end', collected => {
+            if (votesForBan < 5 && votesAgainstBan < 5) {
+                message.channel.send(`The vote to ban ${targetUser.username} has ended without enough votes.`);
+            } else if (votesForBan >= 5) {
+                // Logic to ban the user can be added here
+                message.guild.members.ban(targetUser.id)
+                    .then(() => {
+                        message.channel.send(`${targetUser.username} has been banned from the server.`);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        message.channel.send(`Failed to ban ${targetUser.username}.`);
+                    });
+            } else {
+                message.channel.send(`The vote to ban ${targetUser.username} has failed.`);
+            }
+        });
+        message.channel.send(`Vote to ban ${targetUser.username} has been initiated.`);
     }
 }
