@@ -2,6 +2,7 @@ const { Options } = require("discord.js");
 const { executeMessage } = require("./setwelcome");
 
 module.exports = {
+    data: {
     name: 'voteban',
     description: 'Vote to ban a user from the server, does not requires admin permissions. atleast 5 votes are required to ban a user.',
     Options: [
@@ -11,7 +12,8 @@ module.exports = {
             type: 6, // USER type
             required: true
         }
-    ],
+    ]
+},
     async executeInteraction(interaction) {
         const user = interaction.options.getUser('user');
         if (!user) {
