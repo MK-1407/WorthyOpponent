@@ -14,7 +14,6 @@ module.exports = {
             await command.executeMessage(message, args);
         } catch (error) {
             console.error(error);
-            await message.reply('There was an error executing that command!');
         }
     } catch (error) {
         console.error('Error in messageCreate event:', error);
