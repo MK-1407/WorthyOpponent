@@ -22,7 +22,7 @@ module.exports = {
         const userId = user.id;
         // save the user id to ../data/shushed.json
         const fs = require('fs');
-        const shushedDataPath = '../data/shushed.json';
+        const shushedDataPath = './data/shushed.json';
         let shushedData = {};
         // Check if the file exists
         if (fs.existsSync(shushedDataPath)) {
@@ -47,7 +47,7 @@ module.exports = {
         const userId = targetUser.id;
         // save the user id to ../data/shushed.json
         const fs = require('fs');
-        const shushedDataPath = '../data/shushed.json';
+        const shushedDataPath = './data/shushed.json';
         let shushedData = {};
         // Check if the file exists
         if (fs.existsSync(shushedDataPath)) {
