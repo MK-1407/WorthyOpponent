@@ -23,7 +23,7 @@ module.exports = {
         
         // Load shushed data
         const fs = require('fs');
-        const shushedDataPath = '../data/shushed.json';
+        const shushedDataPath = './data/shushed.json';
         let shushedData = {};
         
         // Check if the file exists
@@ -54,7 +54,7 @@ module.exports = {
         
         // Load shushed data
         const fs = require('fs');
-        const shushedDataPath = '../data/shushed.json';
+        const shushedDataPath = './data/shushed.json';
         let shushedData = {};
         
         // Check if the file exists
